@@ -102,6 +102,12 @@ public:
    * \param index numerology index, used to define PHY layer parameters
    */
   void SetNumerology (uint8_t index);
+  
+  /** this is a new method
+   * Configure the bandwidth index
+   * \param index bandwidth index, used to define PHY layer parameters
+   */
+  void SetBandwidth (uint32_t index);
 
   /**
    * Configure the scheduling pattern for a specific group of devices
@@ -145,7 +151,8 @@ private:
   Ptr<mmwave::MmWavePhyMacCommon> m_phyMacConfig; //!< the configuration parameters
   uint16_t m_rntiCounter; //!< a counter to set the RNTIs
   uint8_t m_numerologyIndex; //!< numerology index
-  double m_bandwidth; //!< system bandwidth
+  // change bandwidth
+  uint32_t m_bandwidthIndex; //!< system bandwidth index
   std::string m_propagationLossModelType; //!< the type id of the propagation loss model to be used
   std::string m_spectrumPropagationLossModelType; //!< the type id of the spectrum propagation loss model to be used
   std::string m_propagationDelayModelType; //!< the type id of the delay model to be used

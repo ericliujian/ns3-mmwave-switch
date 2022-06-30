@@ -86,8 +86,9 @@ class MmWaveVehicularPropagationLossModel : public PropagationLossModel
      * \returns the current frequency (Hz)
      */
     double GetFrequency (void) const;
-
-
+  
+  
+    double Compute_Ad(double m_frequency) const;
     // set and get methods for three weather impacts
     void SetParticleRadius (double particleradius);
     double GetParticleRadius (void) const;

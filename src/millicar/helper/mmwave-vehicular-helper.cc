@@ -85,8 +85,8 @@ MmWaveVehicularHelper::GetTypeId ()
   .AddAttribute ("Bandwidth",
                  "Bandwidth in Hz",
                  DoubleValue (1e8),
-                 MakeDoubleAccessor (&MmWaveVehicularHelper::m_bandwidth),
-                 MakeDoubleChecker<double> ())
+                 MakeDoubleAccessor (&MmWaveVehicularHelper::SetBandwidth),   //set bandwidth
+                 MakeDoubleChecker<uint32_t> ())
   .AddAttribute ("SchedulingPatternOption",
                  "The type of scheduling pattern option to be used for resources assignation."
                  "Default   : one single slot per subframe for each device"
@@ -113,7 +113,7 @@ MmWaveVehicularHelper::DoInitialize ()
   if (!m_phyMacConfig)
   {
     m_phyMacConfig = CreateObjectWithAttributes<mmwave::MmWavePhyMacCommon> ("Numerology", EnumValue (m_numerologyIndex),   
-                                                                             "Bandwidth", DoubleValue (m_bandwidth));
+                                                                             "Bandwidth", DoubleValue (m_bandwidthIndex));   //change bandwidth
   }
 
   // create the channel
@@ -171,6 +171,15 @@ MmWaveVehicularHelper::SetNumerology (uint8_t index)
   NS_LOG_FUNCTION (this);
   m_numerologyIndex = index;
 }
+
+// add a setbandwidth method for mmWave and LTE and need 32 at least
+void
+MmWaveVehicularHelper::SetBandwidth (uint32_t index)
+{
+  NS_LOG_FUNCTION (this);
+  m_bandwidthIndex = index;
+}
+
 
 NetDeviceContainer
 MmWaveVehicularHelper::InstallMmWaveVehicularNetDevices (NodeContainer nodes)

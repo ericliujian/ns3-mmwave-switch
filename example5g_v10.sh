@@ -15,7 +15,7 @@ particleradius=0.0002
 visibility=0.002
 humidity=10
 
-intraGroupDistance=5
+intraGroupDistance=10
 
 
 environment1="l" # the parameter defines the channel condition, l 
@@ -27,8 +27,9 @@ commScenario3="Extended-V2V-Highway" # communication environment
 commScenario4="Extended-V2V-Urban" # communication environment 
 
 
+#for simRun in $(seq 1 1 20); do
 ./waf --run "5g_v10 --bandwidth=$bandwidth --frequency=$frequency --iip=$interPacketInterval --speed=$speed --intraGroupDistance=$intraGroupDistance --Pvalue=$particleradius --Vvalue=$visibility --Hvalue=$humidity --channel_condition=$environment1 --scenario=$commScenario1" 
-
+#done
 
 #three nested for loops works for setting up experiments for weather impacts, also add one for loop for frequency
 

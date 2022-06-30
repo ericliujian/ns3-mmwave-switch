@@ -110,7 +110,9 @@ MmWaveVehicularPropagationLossModel::GetTypeId (void)
 }
 
 // compute weather impact functions
-double Compute_Ad(double m_frequency)
+
+double 
+MmWaveVehicularPropagationLossModel::Compute_Ad(double m_frequency) const
 {
   //weather impact Ad
   //double ae=0.00026; 
@@ -401,7 +403,7 @@ MmWaveVehicularPropagationLossModel::GetLoss (Ptr<MobilityModel> deviceA, Ptr<Mo
       case 'v':
       {
         double additionalLoss = GetAdditionalNlosVLoss (distance3D, hA, hB);
-        lossDb = 32.4 + 20 * log10 (distance3D) + 20 * log10 (freqGHz) + Compute_Ad(m_frequency) +additionalLoss;
+        lossDb = 32.4 + 20 * log10 (distance3D) + 20 * log10 (freqGHz) + Compute_Ad( m_frequency) +additionalLoss;
         break;
       }
       case 'n':
@@ -420,7 +422,7 @@ MmWaveVehicularPropagationLossModel::GetLoss (Ptr<MobilityModel> deviceA, Ptr<Mo
     {
       case 'l':
       {
-        lossDb = 38.77 + 16.7 * log10 (distance3D) + 18.2 * log10 (freqGHz)+Compute_Ad(m_frequency);
+        lossDb = 38.77 + 16.7 * log10 (distance3D) + 18.2 * log10 (freqGHz)+Compute_Ad( m_frequency);
 
         // The shadowing standard deviation and decorrelation distance are
         // specified in TR 36.885 Sec. A.1.4
@@ -432,7 +434,7 @@ MmWaveVehicularPropagationLossModel::GetLoss (Ptr<MobilityModel> deviceA, Ptr<Mo
       {
         double additionalLoss = GetAdditionalNlosVLoss (distance3D, hA, hB);
 
-        lossDb = 38.77 + 16.7 * log10 (distance3D) + 18.2 * log10 (freqGHz) +Compute_Ad(m_frequency) + additionalLoss;
+        lossDb = 38.77 + 16.7 * log10 (distance3D) + 18.2 * log10 (freqGHz) +Compute_Ad( m_frequency) + additionalLoss;
         break;
 
       }
@@ -457,7 +459,7 @@ MmWaveVehicularPropagationLossModel::GetLoss (Ptr<MobilityModel> deviceA, Ptr<Mo
     {
       case 'l':
       {
-        lossDb = 32.4 + 20 * log10 (distance3D) + 20 * log10 (freqGHz)+Compute_Ad(m_frequency);
+        lossDb = 32.4 + 20 * log10 (distance3D) + 20 * log10 (freqGHz)+Compute_Ad( m_frequency);
 
         shadowingStd = 3.0;
         // The extended model does not specify the decorrelation distance. I
@@ -491,7 +493,7 @@ MmWaveVehicularPropagationLossModel::GetLoss (Ptr<MobilityModel> deviceA, Ptr<Mo
     {
       case 'l':
       {
-        lossDb = 38.77 + 16.7 * log10 (distance3D) + 18.2 * log10 (freqGHz)+Compute_Ad(m_frequency);
+        lossDb = 38.77 + 16.7 * log10 (distance3D) + 18.2 * log10 (freqGHz)+Compute_Ad( m_frequency);
         shadowingStd = 3.0;
         // The extended model does not specify the decorrelation distance. I
         // assume the one specified by TR 36.885

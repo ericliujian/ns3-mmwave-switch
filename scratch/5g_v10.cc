@@ -29,6 +29,8 @@
 #include "ns3/applications-module.h"
 #include "ns3/internet-module.h"
 #include "ns3/core-module.h"
+
+// need to include it for changing weather
 #include "ns3/mmwave-vehicular-propagation-loss-model.h"
 
 
@@ -95,12 +97,12 @@ matrix readCSV( string filename )
 
 void MmWaveProp(double humidity,double visibility,double particleradius, double stepTime, int iteration){
 
-matrix M = readCSV( "/home/ericliujian/ns3-mmwave-weather/scratch/preweatherconstantps.csv" );
+matrix M = readCSV( "data/Blanding2021psaverage.csv" );
 
 Ptr<MmWaveVehicularPropagationLossModel> propagationLossModel = CreateObject<MmWaveVehicularPropagationLossModel> ();
 
 humidity = M[iteration][0];
-visibility= M[iteration][1];
+visibility= M[iteration][3];
 particleradius=M[iteration][2];
 
 propagationLossModel->SetHumidity(humidity);
@@ -115,7 +117,6 @@ std::cout << "Particle Radius:\t" << particleradius << std::endl;
 iteration +=1;
 
 
-
 /*
 auto channel = DynamicCast<MmWaveVehicularNetDevice>(devs.Get(0))->GetPhy()->GetSpectrumPhy()->GetSpectrumChannel();
   PointerValue plm;
@@ -127,22 +128,14 @@ auto channel = DynamicCast<MmWaveVehicularNetDevice>(devs.Get(0))->GetPhy()->Get
 */   
 
 
-/*
-humidity +=1;
-
-if (humidity >=100) {
-       humidity=100;  
-
-    }*/
-
-Simulator::Schedule(Seconds(stepTime), &MmWaveProp, humidity, visibility, particleradius, stepTime,iteration);
+Simulator::Schedule(Seconds(stepTime), &MmWaveProp, humidity, visibility, particleradius, stepTime, iteration);
 
 }
 
 
 
-
 void computeRxPower(NetDeviceContainer devs, NetDeviceContainer devs2) {
+  //set up mmWave channel
   auto channel = DynamicCast<MmWaveVehicularNetDevice>(devs.Get(0))->GetPhy()->GetSpectrumPhy()->GetSpectrumChannel();
   PointerValue plm;
   channel->GetAttribute("PropagationLossModel", plm);
@@ -153,18 +146,17 @@ void computeRxPower(NetDeviceContainer devs, NetDeviceContainer devs2) {
   
 
   double RxPowerVal = pathloss ->DoCalcRxPower( txPower, mobileNode1, mobileNode0);
+  double Weatherpathloss= pathloss ->Compute_Ad(28000000000);
 
   //double PL = pathloss -> GetLoss (mobileNode1, mobileNode0);
   
 
 
   std::cout << "\nThe value of the RxPOWER is: " << RxPowerVal << std::endl;
+  std::cout << "\nThe value of the Weather pathloss is: " << Weatherpathloss << std::endl;
   
-  
-  
-
- // std::cout << "\n The value of the PathLoss is: " << PL << std::endl;
- 
+    
+  // setup LTE channel
   auto channel2 = DynamicCast<MmWaveVehicularNetDevice>(devs2.Get(0))->GetPhy()->GetSpectrumPhy()->GetSpectrumChannel();
   PointerValue plm2;
   channel2->GetAttribute("PropagationLossModel", plm2);
@@ -176,10 +168,11 @@ void computeRxPower(NetDeviceContainer devs, NetDeviceContainer devs2) {
   
 
   double RxPowerVal2 = pathloss2 ->DoCalcRxPower( txPower, mobileNode2, mobileNode3);
-
+  double Weatherpathloss2= pathloss2 ->Compute_Ad(5900000000);
     
 
-  std::cout << "The value of the RxPOWER22 is: " << RxPowerVal2 << "\n"<<std::endl;
+  std::cout << "The value of the RxPOWER2 is: " << RxPowerVal2 << "\n"<<std::endl;
+  std::cout << "\nThe value of the Weather pathloss2 is: " << Weatherpathloss2 << std::endl;
 
 
   std::ofstream outdata; // outdata is like cin
@@ -189,7 +182,7 @@ void computeRxPower(NetDeviceContainer devs, NetDeviceContainer devs2) {
       cerr << "Error: file could not be opened" << endl;
       exit(1);
    }
-  outdata << RxPowerVal<<","<<RxPowerVal2<<endl;
+  outdata << RxPowerVal<<","<<RxPowerVal2<<","<<Weatherpathloss<<","<<Weatherpathloss2<<endl;
 
 
  // outdata << PL<< endl;
@@ -199,6 +192,32 @@ void computeRxPower(NetDeviceContainer devs, NetDeviceContainer devs2) {
   //Simulator::Schedule(Seconds(stepTime), &computeRxPower, devs, stepTime);
 }
  
+void
+GetDistance_From (Ptr<Node> node1, Ptr<Node> node2)
+{
+
+  Ptr<MobilityModel> model1 = node1->GetObject<MobilityModel>();
+  Ptr<MobilityModel> model2 = node2->GetObject<MobilityModel>();
+  double distance = model1->GetDistanceFrom (model2);
+  //return distance;
+  
+  std::cout << "Distance:\t" << distance << std::endl;
+  
+  std::ofstream outdata; // outdata is like cin
+  outdata.open("distance.csv", std::ofstream::app); // opens the file
+   if( !outdata ) { // file couldn't be opened
+      cerr << "Error: file could not be opened" << endl;
+      exit(1);
+   }
+  outdata << distance<<endl;
+
+
+ // outdata << PL<< endl;
+  outdata.close();
+  
+  //Simulator::Schedule(Seconds(stepTime), &MmWaveProp, humidity, visibility, particleradius, stepTime, iteration);
+} 
+
 
 
 static void Rx (Ptr<OutputStreamWrapper> stream, Ptr<const Packet> p)
@@ -239,7 +258,7 @@ int main (int argc, char *argv[])
   // applications
   uint32_t packetSize = 1024; // UDP packet size in bytes
   uint32_t startTime = 0.05; // application start time in milliseconds
-  uint32_t endTime = 6000; // application end time in milliseconds
+  uint32_t endTime = 23528; // application end time in milliseconds
 
   uint32_t timeRes = 1; // 
   
@@ -284,8 +303,10 @@ int main (int argc, char *argv[])
 
   Config::SetDefault ("ns3::MmWaveSidelinkMac::UseAmc", BooleanValue (true));
   Config::SetDefault ("ns3::MmWavePhyMacCommon::CenterFreq", DoubleValue (frequency));
-  Config::SetDefault ("ns3::MmWaveVehicularHelper::Bandwidth", DoubleValue (bandwidth));
-  Config::SetDefault ("ns3::MmWaveVehicularHelper::Numerology", UintegerValue (numerology));
+  
+  // need to change different bandwidth for mmWave and LTE
+  //Config::SetDefault ("ns3::MmWaveVehicularHelper::Bandwidth", DoubleValue (bandwidth));
+  //Config::SetDefault ("ns3::MmWaveVehicularHelper::Numerology", UintegerValue (numerology));
   
   // set channelcondition and scenario
   Config::SetDefault ("ns3::MmWaveVehicularPropagationLossModel::ChannelCondition", StringValue (channel_condition));
@@ -327,9 +348,12 @@ int main (int argc, char *argv[])
 
   n.Get (1)->GetObject<MobilityModel> ()->SetPosition (Vector (0, intraGroupDistance,  0));
   n.Get (1)->GetObject<ConstantVelocityMobilityModel> ()->SetVelocity (Vector (0, speed, 0));
+  
+  //double distance = (n.Get (0)->GetObject<MobilityModel> ())->GetDistanceFrom (n.Get (1)->GetObject<MobilityModel> ());
 
   // create and configure the helper
   Ptr<MmWaveVehicularHelper> helper = CreateObject<MmWaveVehicularHelper> ();
+  helper->SetBandwidth(bandwidth);
   helper->SetNumerology (3);
   helper->SetPropagationLossModelType ("ns3::MmWaveVehicularPropagationLossModel");
   helper->SetSpectrumPropagationLossModelType ("ns3::MmWaveVehicularSpectrumPropagationLossModel");
@@ -337,6 +361,7 @@ int main (int argc, char *argv[])
   
   
   Ptr<MmWaveVehicularHelper> helper2 = CreateObject<MmWaveVehicularHelper> ();
+  helper2->SetBandwidth(2e7);
   helper2->SetNumerology (2);
   helper2->SetPropagationLossModelType ("ns3::MmWaveVehicularPropagationLossModel");
   helper2->SetSpectrumPropagationLossModelType ("ns3::MmWaveVehicularSpectrumPropagationLossModel");
@@ -395,23 +420,25 @@ int main (int argc, char *argv[])
   ApplicationContainer apps = client.Install (n.Get (0));
   
 
+
   // set the application start/end time
   apps.Start (MilliSeconds (startTime));
   apps.Stop (MilliSeconds(endTime));
+
   
   // Invoke GUI just before entering Simulator::Run 
   /*GtkConfigStore config;
   config.ConfigureDefaults ();
   config.ConfigureAttributes ();*/
   
-  matrix M = readCSV( "/home/ericliujian/ns3-mmwave-weather/scratch/preweatherconstantps.csv");
+  matrix M = readCSV( "data/Blanding2021psaverage.csv");
   //write( M );
 
   std::cout << "----------- Humidity -----------" << std::endl;
   std::cout << "HUMIDITY+++++"<<M[0][0] << std::endl;
   
   humidity = M[0][0];
-  visibility= M[0][1];
+  visibility= M[0][3];
   particleradius= M[0][2];
 
   
@@ -421,9 +448,13 @@ int main (int argc, char *argv[])
   for (size_t i = 0; i < endTime / timeRes; i++)
     {
       Simulator::Schedule (MilliSeconds(timeRes * (i+0.1)), &computeRxPower, devs, devs2);
+      Simulator::Schedule (MilliSeconds(timeRes * (i+0.1)), &GetDistance_From, n.Get(0), n.Get(1));
     }
 
   //computeRxPower(devs, stepTime2);
+  //GetDistance_From(n.Get (0), n.Get (1), stepTime);
+  
+  //Simulator::Schedule(MilliSeconds(0.001), &GetDistance_From, n.Get(0), n.Get(1));
   Simulator::Stop (MilliSeconds (endTime + 1));
    
     
@@ -434,7 +465,7 @@ int main (int argc, char *argv[])
   
   std::cout << "----------- Statistics -----------" << std::endl;
   std::cout << "Packets size:\t\t" << packetSize << " Bytes" << std::endl;
-  
+  //std::cout << distance << std::endl;
   std::cout << "Packets received:\t" << g_rxPackets << std::endl;
   std::cout << "Average Throughput:\t" << throughput << " Mbps" << std::endl;
   std::cout << "First Received Time:\t" << g_firstReceived.GetSeconds() << std::endl;
