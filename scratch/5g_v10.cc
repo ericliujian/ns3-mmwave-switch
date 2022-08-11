@@ -134,8 +134,8 @@ Simulator::Schedule(Seconds(stepTime), &MmWaveProp, humidity, visibility, partic
 
 
 
-void computeRxPower(NetDeviceContainer devs, NetDeviceContainer devs2) {
-  //set up mmWave channel
+void computeRxPower(NetDeviceContainer devs, NetDeviceContainer devs2, NetDeviceContainer devs3) {
+  //set up mmWave channel 28GHz
   auto channel = DynamicCast<MmWaveVehicularNetDevice>(devs.Get(0))->GetPhy()->GetSpectrumPhy()->GetSpectrumChannel();
   PointerValue plm;
   channel->GetAttribute("PropagationLossModel", plm);
@@ -156,7 +156,7 @@ void computeRxPower(NetDeviceContainer devs, NetDeviceContainer devs2) {
   std::cout << "\nThe value of the Weather pathloss is: " << Weatherpathloss << std::endl;
   
     
-  // setup LTE channel
+  // setup DSRC channel   5.9GHz
   auto channel2 = DynamicCast<MmWaveVehicularNetDevice>(devs2.Get(0))->GetPhy()->GetSpectrumPhy()->GetSpectrumChannel();
   PointerValue plm2;
   channel2->GetAttribute("PropagationLossModel", plm2);
@@ -175,6 +175,24 @@ void computeRxPower(NetDeviceContainer devs, NetDeviceContainer devs2) {
   std::cout << "\nThe value of the Weather pathloss2 is: " << Weatherpathloss2 << std::endl;
 
 
+  // setup LTE channel  2.1GHz
+  auto channel3 = DynamicCast<MmWaveVehicularNetDevice>(devs3.Get(0))->GetPhy()->GetSpectrumPhy()->GetSpectrumChannel();
+  PointerValue plm3;
+  channel3->GetAttribute("PropagationLossModel", plm3);
+  Ptr<MmWaveVehicularPropagationLossModel> pathloss3 = DynamicCast<MmWaveVehicularPropagationLossModel>(plm3.Get<PropagationLossModel>());
+  pathloss3->SetFrequency (2100000000);
+
+  Ptr<MobilityModel> mobileNode4 = devs3.Get(0)->GetNode()->GetObject<MobilityModel>();
+  Ptr<MobilityModel> mobileNode5 = devs3.Get(1)->GetNode()->GetObject<MobilityModel>();
+  
+
+  double RxPowerVal3 = pathloss3 ->DoCalcRxPower( txPower, mobileNode4, mobileNode5);
+  double Weatherpathloss3= pathloss3 ->Compute_Ad(2100000000);
+    
+
+  std::cout << "The value of the RxPOWER3 is: " << RxPowerVal3 << "\n"<<std::endl;
+  std::cout << "\nThe value of the Weather pathloss3 is: " << Weatherpathloss3 << std::endl;
+
   std::ofstream outdata; // outdata is like cin
   
   outdata.open("RxPower28preweatherconstantpsv0.005d5.csv", std::ofstream::app); // opens the file
@@ -182,7 +200,7 @@ void computeRxPower(NetDeviceContainer devs, NetDeviceContainer devs2) {
       cerr << "Error: file could not be opened" << endl;
       exit(1);
    }
-  outdata << RxPowerVal<<","<<RxPowerVal2<<","<<Weatherpathloss<<","<<Weatherpathloss2<<endl;
+  outdata << RxPowerVal<<","<<RxPowerVal2<<","<<RxPowerVal3<<","<<Weatherpathloss<<","<<Weatherpathloss2<<","<<Weatherpathloss3<<endl;
 
 
  // outdata << PL<< endl;
@@ -368,6 +386,14 @@ int main (int argc, char *argv[])
   NetDeviceContainer devs2 = helper2->InstallMmWaveVehicularNetDevices (n);
   
   
+  Ptr<MmWaveVehicularHelper> helper3 = CreateObject<MmWaveVehicularHelper> ();
+  helper3->SetBandwidth(2e7);
+  helper3->SetNumerology (2);
+  helper3->SetPropagationLossModelType ("ns3::MmWaveVehicularPropagationLossModel");
+  helper3->SetSpectrumPropagationLossModelType ("ns3::MmWaveVehicularSpectrumPropagationLossModel");
+  NetDeviceContainer devs3 = helper3->InstallMmWaveVehicularNetDevices (n);
+  
+  
 
   // Install the TCP/IP stack in the two nodes
   InternetStackHelper internet;
@@ -375,16 +401,20 @@ int main (int argc, char *argv[])
 
   Ipv4AddressHelper ipv4;
   Ipv4AddressHelper ipv42;
+  Ipv4AddressHelper ipv43;
   NS_LOG_INFO ("Assign IP Addresses.");
   ipv4.SetBase ("10.1.1.0", "255.255.255.0");
   Ipv4InterfaceContainer i = ipv4.Assign (devs);
   ipv42.SetBase ("11.1.1.0", "255.255.255.0");
   Ipv4InterfaceContainer i2 = ipv42.Assign (devs2);
+  ipv43.SetBase ("12.1.1.0", "255.255.255.0");
+  Ipv4InterfaceContainer i3 = ipv43.Assign (devs3);
 
   // Need to pair the devices in order to create a correspondence between transmitter and receiver
   // and to populate the < IP addr, RNTI > map.
   helper->PairDevices(devs);
   helper2->PairDevices(devs2);
+  helper3->PairDevices(devs3);
 
 
   // Set the routing table
@@ -447,7 +477,7 @@ int main (int argc, char *argv[])
 
   for (size_t i = 0; i < endTime / timeRes; i++)
     {
-      Simulator::Schedule (MilliSeconds(timeRes * (i+0.1)), &computeRxPower, devs, devs2);
+      Simulator::Schedule (MilliSeconds(timeRes * (i+0.1)), &computeRxPower, devs, devs2,devs3);
       Simulator::Schedule (MilliSeconds(timeRes * (i+0.1)), &GetDistance_From, n.Get(0), n.Get(1));
     }
 
