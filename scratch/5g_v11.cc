@@ -523,7 +523,7 @@ int main (int argc, char *argv[])
   apps3.Start (MilliSeconds (startTime));
 
 
-  double throughput3 = (double(g_rxPackets)*(double(packetSize)*8)/double( g_lastReceived.GetSeconds() - g_firstReceived.GetSeconds()))/1e6;
+  //double throughput3 = (double(g_rxPackets)*(double(packetSize)*8)/double( g_lastReceived.GetSeconds() - g_firstReceived.GetSeconds()))/1e6;
   
   // Invoke GUI just before entering Simulator::Run 
   /*GtkConfigStore config;
